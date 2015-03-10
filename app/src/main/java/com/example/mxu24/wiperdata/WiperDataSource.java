@@ -29,6 +29,11 @@ public class WiperDataSource {
         this.mainDataListener = listener;
 
     }
+    public WiperDataSource(DataListener listener){
+        //this.main = context;
+        this.mainDataListener = listener;
+
+    }
 
     public void updateVehicleSpeed(VehicleSpeed vehicleSpeed){
         Double vehicleSpeedData = vehicleSpeed.toVehicleMessage().asSimpleMessage().getValueAsNumber().doubleValue();

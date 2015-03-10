@@ -45,6 +45,9 @@ public class MainActivity extends ActionBarActivity implements WiperDataSource.D
         speedTextView = (TextView)findViewById(R.id.speedTextView);
         positionTextView = (TextView)findViewById(R.id.positionTextView);
         timeTextView = (TextView)findViewById(R.id.timeTextView);
+
+        Intent intent = new Intent(this, DataCollectService.class);
+        startService(intent);
     }
 
 
