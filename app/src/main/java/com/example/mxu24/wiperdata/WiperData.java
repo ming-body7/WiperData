@@ -8,6 +8,9 @@ import android.content.Context;
 import android.location.Location;
 import android.location.LocationManager;
 
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
+
 import java.sql.Timestamp;
 
 /**
@@ -20,6 +23,7 @@ public class WiperData {
     private Timestamp timeStamp;
     private Double vehicleSpeed;
     private Context context;
+    private GoogleApiClient mGoogleApiClient;
 
     public WiperData(Context context, Boolean wiperStatus, Double vehicleSpeed){
         this.wiperStatus = wiperStatus;
@@ -48,26 +52,47 @@ public class WiperData {
         //this.timeStamp = new Timestamp(System.currentTimeMillis());
         updateLocationAndTimestamp();
     }
+    public WiperData(Boolean wiperStatus, GoogleApiClient mGoogleApiClient){
+        this.wiperStatus = wiperStatus;
+        this.vehicleSpeed = 0.0;
+        this.mGoogleApiClient = mGoogleApiClient;
+        //this.timeStamp = new Timestamp(System.currentTimeMillis());
+        updateLocationAndTimestamp(mGoogleApiClient);
+    }
+    public WiperData(Double vehicleSpeed, GoogleApiClient mGoogleApiClient){
+        this.wiperStatus = false;
+        this.vehicleSpeed = vehicleSpeed;
+        this.mGoogleApiClient = mGoogleApiClient;
+        //this.timeStamp = new Timestamp(System.currentTimeMillis());
+        updateLocationAndTimestamp(mGoogleApiClient);
+    }
+
+
 
     public void updateVehicleSpeedStatus(Double vehicleSpeedData) {
         this.vehicleSpeed = vehicleSpeedData;
-        updateLocationAndTimestamp();
+        updateLocationAndTimestamp(mGoogleApiClient);
 
     }
 
     public void updateWiperStatus(Boolean wiperStatusData) {
         this.wiperStatus = wiperStatusData;
-        updateLocationAndTimestamp();
+        updateLocationAndTimestamp(mGoogleApiClient);
     }
 
     private void updateLocationAndTimestamp(){
         this.timeStamp = new Timestamp(System.currentTimeMillis());
         //LocationManager locationManager = (LocationManager)
         //getSystemService(Context.LOCATION_SERVICE);
-        MainActivity activity = (MainActivity)context;
+        //MainActivity activity = (MainActivity)context;
         //String locationProvider = LocationManager.GPS_PROVIDER;
-        String locationProvider = LocationManager.NETWORK_PROVIDER;
-        this.vehicleLocation = activity.locationManager.getLastKnownLocation(locationProvider);
+        //String locationProvider = LocationManager.NETWORK_PROVIDER;
+        //this.vehicleLocation = activity.locationManager.getLastKnownLocation(locationProvider);
+        this.vehicleLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+    }
+    private void updateLocationAndTimestamp(GoogleApiClient mGoogleApiClient) {
+        this.timeStamp = new Timestamp(System.currentTimeMillis());
+        this.vehicleLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
     }
 
     public Boolean getWiperStatus() {

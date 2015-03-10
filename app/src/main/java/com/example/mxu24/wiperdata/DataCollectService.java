@@ -6,28 +6,42 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.location.Location;
-import android.location.LocationListener;
-import android.location.LocationManager;
 import android.os.Binder;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 
+import com.google.android.gms.common.ConnectionResult;
+import com.google.android.gms.common.api.GoogleApiClient;
+import com.google.android.gms.location.LocationServices;
+import com.openxc.NoValueException;
 import com.openxc.VehicleManager;
 import com.openxc.measurements.Measurement;
+import com.openxc.measurements.UnrecognizedMeasurementTypeException;
 import com.openxc.measurements.VehicleSpeed;
 import com.openxc.measurements.WindshieldWiperStatus;
 
-public class DataCollectService extends Service implements  WiperDataSource.DataListener{
+public class DataCollectService extends Service implements  WiperDataSource.DataListener,
+        GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener{
 
     private final static String TAG = "WiperDataService";
     private Location mLocation;
     private VehicleManager mVehicleManager;
-    private LocationManager mLocationManager;
+    //private LocationManager mLocationManager;
     private WiperDataSource mWiperDataSource;
+    private GoogleApiClient mGoogleApiClient;
+    Handler myHandler;
+
+    Handler queryVehicleHandler;
+    Runnable queryVehicleRunnable;
 
     private final IBinder mBinder = new LocalBinder();
 
+    @Override
+    public void onLocationChanged(Location location) {
+        this.mLocation = location;
+    }
 
 
     public class LocalBinder extends Binder {
@@ -43,15 +57,39 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
     public void onCreate(){
         //one time setup procedure
         super.onCreate();
-        mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
-        mWiperDataSource = new WiperDataSource(this);
+        //mLocationManager = (LocationManager)getSystemService(Context.LOCATION_SERVICE);
 
+        buildGoogleApiClient();
         if(mVehicleManager == null){
             Intent intent = new Intent(this, VehicleManager.class);
             bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
         }
+        //HandlerThread thread = new HandlerThread()
+        myHandler = new Handler();
 
+        queryVehicleHandler = new Handler();
+        queryVehicleRunnable = new Runnable() {
+            @Override
+            public void run() {
+                //TODO:query vehicle data
+                if (mVehicleManager != null) {
+                    try {
+                        WindshieldWiperStatus wiperStatus = (WindshieldWiperStatus) mVehicleManager.get(WindshieldWiperStatus.class);
+                        mWiperDataSource.updateWiperStatus(wiperStatus);
+                    } catch (NoValueException e) {
+                        Log.w(TAG, "The vehicle may not have made the measurement yet");
+                    } catch (UnrecognizedMeasurementTypeException e) {
+                        Log.w(TAG, "The measurement type was not recognized");
+                    }
+                    queryVehicleHandler.postDelayed(queryVehicleRunnable, 1000);
+                }
+            }
+
+        };
+        queryVehicleHandler.postDelayed(queryVehicleRunnable, 1000);
     }
+
+
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
@@ -63,32 +101,7 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
         super.onDestroy();
     }
 
-    LocationListener locationListener = new LocationListener() {
-        @Override
-        public void onLocationChanged(Location location) {
-            //call the location update
-            updateLocation(location);
-        }
 
-        @Override
-        public void onStatusChanged(String provider, int status, Bundle extras) {
-
-        }
-
-        @Override
-        public void onProviderEnabled(String provider) {
-
-        }
-
-        @Override
-        public void onProviderDisabled(String provider) {
-
-        }
-    };
-
-    private void updateLocation(Location location) {
-        this.mLocation = location;
-    }
 
     /**
      * Get Vehicle Message
@@ -107,8 +120,16 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
                         wiperDataSource.updateWiperStatus(wiperStatus);
                 }
             });*/
-            if(mWiperDataSource!=null&&mLocationManager!=null)
-                mWiperDataSource.updateWiperStatus(wiperStatus);
+            //Handler myHandler = new Handler();
+            myHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if(mWiperDataSource!=null&&mGoogleApiClient!=null)
+                        mWiperDataSource.updateWiperStatus(wiperStatus);
+                }
+            });
+            //if(mWiperDataSource!=null&&mGoogleApiClient!=null)
+                //mWiperDataSource.updateWiperStatus(wiperStatus);
         }
     };
 
@@ -117,7 +138,7 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
         @Override
         public void receive(Measurement measurement) {
             final VehicleSpeed vehicleSpeed = (VehicleSpeed) measurement;
-            Log.i(TAG,"Service get wiper data");
+            Log.i(TAG,"Service get speed data");
             /*MainActivity.this.runOnUiThread(new Runnable() {
                 public void run() {
                     //TODO:update UI or data
@@ -126,9 +147,16 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
                         wiperDataSource.updateVehicleSpeed(vehicleSpeed);
                 }
             });*/
-
-            if(mWiperDataSource!=null&&mLocationManager!=null)
-                mWiperDataSource.updateVehicleSpeed(vehicleSpeed);
+            //Handler myHandler = new Handler();
+            myHandler.post(new Runnable() {
+                @Override
+                public void run() {
+                    if(mWiperDataSource!=null&&mGoogleApiClient!=null)
+                        mWiperDataSource.updateVehicleSpeed(vehicleSpeed);
+                }
+            });
+            //if(mWiperDataSource!=null&&mGoogleApiClient!=null)
+                //mWiperDataSource.updateVehicleSpeed(vehicleSpeed);
         }
 
     };
@@ -147,8 +175,8 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
             // have an EngineSpeed.ListeVehicleMessageBufferner (see above, mSpeedListener) and here
             // we request that the VehicleManager call its receive() method
             // whenever the EngineSpeed changes
-            mVehicleManager.addListener(WindshieldWiperStatus.class, mWiperListener);
-            mVehicleManager.addListener(VehicleSpeed.class, mSpeedListener);
+            //mVehicleManager.addListener(WindshieldWiperStatus.class, mWiperListener);
+            //mVehicleManager.addListener(VehicleSpeed.class, mSpeedListener);
         }
 
         // Called when the connection with the service disconnects unexpectedly
@@ -158,8 +186,41 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
         }
     };
 
+
+    protected synchronized void buildGoogleApiClient() {
+        mGoogleApiClient = new GoogleApiClient.Builder(this)
+                .addConnectionCallbacks(this)
+                .addOnConnectionFailedListener(this)
+                .addApi(LocationServices.API)
+                .build();
+        mGoogleApiClient.connect();
+    }
+
+    @Override
+    public void onConnected(Bundle bundle) {
+        mWiperDataSource = new WiperDataSource(this, mGoogleApiClient);
+        mLocation = LocationServices.FusedLocationApi.getLastLocation(mGoogleApiClient);
+    }
+
+    @Override
+    public void onConnectionSuspended(int i) {
+
+    }
+
+    @Override
+    public void onConnectionFailed(ConnectionResult connectionResult) {
+
+    }
+
     @Override
     public void receive(WiperData data) {
-
+        //TODO:send through Internet to Database
+        Log.i(TAG,"Receive Wiper Data");
+        //wiperTextView.setText(String.valueOf(data.getWiperStatus()));
+        //speedTextView.setText(String.valueOf(data.getVehicleSpeed()));
+        String latitude = String.valueOf(data.getVehicleLocation().getLatitude());
+        String altitude = String.valueOf(data.getVehicleLocation().getAltitude());
+        //positionTextView.setText("Latitude:"+latitude+" Altitude:"+altitude);
+        //timeTextView.setText(data.getTimeStamp().toString());
     }
 }

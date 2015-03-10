@@ -5,7 +5,9 @@ package com.example.mxu24.wiperdata;
  */
 
 import android.content.Context;
+import android.util.Log;
 
+import com.google.android.gms.common.api.GoogleApiClient;
 import com.openxc.measurements.VehicleSpeed;
 import com.openxc.measurements.WindshieldWiperStatus;
 
@@ -19,6 +21,8 @@ public class WiperDataSource {
     private Context main;
     private DataListener mainDataListener;
     private WiperData wiperData;
+    private GoogleApiClient mGoogleApiClient;
+
 
     public interface DataListener{
         public void receive(WiperData data);
@@ -29,8 +33,9 @@ public class WiperDataSource {
         this.mainDataListener = listener;
 
     }
-    public WiperDataSource(DataListener listener){
+    public WiperDataSource(DataListener listener, GoogleApiClient mGoogleApiClient){
         //this.main = context;
+        this.mGoogleApiClient = mGoogleApiClient;
         this.mainDataListener = listener;
 
     }
@@ -40,7 +45,8 @@ public class WiperDataSource {
         if(wiperData != null){
             wiperData.updateVehicleSpeedStatus(vehicleSpeedData);
         }else{
-            wiperData = new WiperData(main, vehicleSpeedData);
+            //wiperData = new WiperData(main, vehicleSpeedData);
+            wiperData = new WiperData(vehicleSpeedData, mGoogleApiClient);
         }
         notifyDataChange();
     }
@@ -49,12 +55,14 @@ public class WiperDataSource {
         if(wiperData != null){
             wiperData.updateWiperStatus(wiperStatusData);
         }else{
-            wiperData = new WiperData(main, wiperStatusData);
+            //wiperData = new WiperData(main, wiperStatusData);
+            wiperData = new WiperData(wiperStatusData, mGoogleApiClient);
         }
         notifyDataChange();
     }
 
     private void notifyDataChange(){
+        Log.i("WiperDataSource", "Update Data");
         mainDataListener.receive(wiperData);
     }
 
