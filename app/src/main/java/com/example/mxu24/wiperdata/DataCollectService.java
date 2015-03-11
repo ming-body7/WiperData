@@ -25,6 +25,7 @@ import com.openxc.measurements.WindshieldWiperStatus;
 public class DataCollectService extends Service implements  WiperDataSource.DataListener,
         GoogleApiClient.ConnectionCallbacks, GoogleApiClient.OnConnectionFailedListener, com.google.android.gms.location.LocationListener{
 
+    public static final String BROADCAST_ACTION = "com.example.mxu24.wiperdata";
     private final static String TAG = "WiperDataService";
     private Location mLocation;
     private VehicleManager mVehicleManager;
@@ -37,7 +38,7 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
     Runnable queryVehicleRunnable;
 
     private final IBinder mBinder = new LocalBinder();
-
+    Intent intent;
     @Override
     public void onLocationChanged(Location location) {
         this.mLocation = location;
@@ -66,7 +67,7 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
         }
         //HandlerThread thread = new HandlerThread()
         myHandler = new Handler();
-
+        intent = new Intent(BROADCAST_ACTION);
         queryVehicleHandler = new Handler();
         queryVehicleRunnable = new Runnable() {
             @Override
@@ -77,6 +78,7 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
                         WindshieldWiperStatus wiperStatus = (WindshieldWiperStatus) mVehicleManager.get(WindshieldWiperStatus.class);
                         VehicleSpeed vehicleSpeed = (VehicleSpeed) mVehicleManager.get(VehicleSpeed.class);
                         mWiperDataSource.updateData(vehicleSpeed, wiperStatus);
+
                     } catch (NoValueException e) {
                         Log.w(TAG, "The vehicle may not have made the measurement yet");
                     } catch (UnrecognizedMeasurementTypeException e) {
@@ -90,7 +92,10 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
         queryVehicleHandler.postDelayed(queryVehicleRunnable, 1000);
     }
 
-
+    @Override
+    public int onStartCommand(Intent intent, int flags, int startId){
+        return super.onStartCommand(intent, flags, startId);
+    }
     @Override
     public IBinder onBind(Intent intent) {
         return mBinder;
@@ -223,5 +228,11 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
         String longitude = String.valueOf(data.getVehicleLocation().getLongitude());
         //positionTextView.setText("Latitude:"+latitude+" Altitude:"+altitude);
         //timeTextView.setText(data.getTimeStamp().toString());
+
+        intent.putExtra("wiperstatus", data.getWiperStatus().toString());
+        intent.putExtra("vehiclespeed",data.getVehicleSpeed().toString());
+        intent.putExtra("timestamp",data.getTimeStamp().toString());
+        intent.putExtra("location",data.getVehicleLocation().toString());
+        sendBroadcast(intent);
     }
 }
