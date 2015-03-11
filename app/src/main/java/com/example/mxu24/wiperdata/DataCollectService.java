@@ -75,7 +75,8 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
                 if (mVehicleManager != null) {
                     try {
                         WindshieldWiperStatus wiperStatus = (WindshieldWiperStatus) mVehicleManager.get(WindshieldWiperStatus.class);
-                        mWiperDataSource.updateWiperStatus(wiperStatus);
+                        VehicleSpeed vehicleSpeed = (VehicleSpeed) mVehicleManager.get(VehicleSpeed.class);
+                        mWiperDataSource.updateData(vehicleSpeed, wiperStatus);
                     } catch (NoValueException e) {
                         Log.w(TAG, "The vehicle may not have made the measurement yet");
                     } catch (UnrecognizedMeasurementTypeException e) {
@@ -219,7 +220,7 @@ public class DataCollectService extends Service implements  WiperDataSource.Data
         //wiperTextView.setText(String.valueOf(data.getWiperStatus()));
         //speedTextView.setText(String.valueOf(data.getVehicleSpeed()));
         String latitude = String.valueOf(data.getVehicleLocation().getLatitude());
-        String altitude = String.valueOf(data.getVehicleLocation().getAltitude());
+        String longitude = String.valueOf(data.getVehicleLocation().getLongitude());
         //positionTextView.setText("Latitude:"+latitude+" Altitude:"+altitude);
         //timeTextView.setText(data.getTimeStamp().toString());
     }

@@ -61,6 +61,18 @@ public class WiperDataSource {
         notifyDataChange();
     }
 
+    public void updateData(VehicleSpeed vehicleSpeed, WindshieldWiperStatus wiperStatus){
+        Double vehicleSpeedData = vehicleSpeed.toVehicleMessage().asSimpleMessage().getValueAsNumber().doubleValue();
+        Boolean wiperStatusData = wiperStatus.toVehicleMessage().asSimpleMessage().getValueAsBoolean();
+        if(wiperData != null){
+            wiperData.updateVehicleSpeedStatus(vehicleSpeedData);
+            wiperData.updateWiperStatus(wiperStatusData);
+        }else{
+            //wiperData = new WiperData(main, vehicleSpeedData);
+            wiperData = new WiperData(wiperStatusData, vehicleSpeedData, mGoogleApiClient);
+        }
+        notifyDataChange();
+    }
     private void notifyDataChange(){
         Log.i("WiperDataSource", "Update Data");
         mainDataListener.receive(wiperData);

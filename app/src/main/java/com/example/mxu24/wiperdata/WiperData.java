@@ -6,7 +6,6 @@ package com.example.mxu24.wiperdata;
 
 import android.content.Context;
 import android.location.Location;
-import android.location.LocationManager;
 
 import com.google.android.gms.common.api.GoogleApiClient;
 import com.google.android.gms.location.LocationServices;
@@ -25,16 +24,12 @@ public class WiperData {
     private Context context;
     private GoogleApiClient mGoogleApiClient;
 
-    public WiperData(Context context, Boolean wiperStatus, Double vehicleSpeed){
+    public WiperData(Boolean wiperStatus, Double vehicleSpeed, GoogleApiClient mGoogleApiClient){
         this.wiperStatus = wiperStatus;
         this.vehicleSpeed = vehicleSpeed;
         this.timeStamp = new Timestamp(System.currentTimeMillis());
-        this.context = context;
-        //LocationManager locationManager = (LocationManager)
-                //getSystemService(Context.LOCATION_SERVICE);
-        MainActivity activity = (MainActivity)context;
-        String locationProvider = LocationManager.GPS_PROVIDER;
-        this.vehicleLocation = activity.locationManager.getLastKnownLocation(locationProvider);
+        this.mGoogleApiClient = mGoogleApiClient;
+        updateLocationAndTimestamp(mGoogleApiClient);
     }
     public WiperData(Context context, Boolean wiperStatus){
         this.wiperStatus = wiperStatus;
@@ -50,7 +45,8 @@ public class WiperData {
         this.vehicleSpeed = vehicleSpeed;
         this.context = context;
         //this.timeStamp = new Timestamp(System.currentTimeMillis());
-        updateLocationAndTimestamp();
+        //updateLocationAndTimestamp();
+        updateLocationAndTimestamp(mGoogleApiClient);
     }
     public WiperData(Boolean wiperStatus, GoogleApiClient mGoogleApiClient){
         this.wiperStatus = wiperStatus;
